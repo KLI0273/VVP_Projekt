@@ -113,15 +113,12 @@ def create_path_matrix(maze, path):
 
     return path_matrix
 
-def generator_maze(n, shape=None):
+def generator_maze(n, template_number=0):
     maze = np.ones((n,n))
     maze[0,0] = 0
     maze[n-1,n-1] = 0
-    #indexy = [(i,j) for i in range(n) for j in range(n)]
-    tretina = int(n/3)
-    indexy = [(i,j) for i in range(n) for j in range(n) if not ((i == tretina and j<n*4/5) or (i == 2*tretina and j>n/5))]
-    #*indexy = [(i,j) for i in range(n) for j in range(n) if not ((i == j-5 and j<n*4/5) or (i == j+5 and j>n/5))]
-    
+    indexy = get_template(n, template_number)
+
     while True:
         try: 
             inc = incidence_matrix(maze)
@@ -133,3 +130,28 @@ def generator_maze(n, shape=None):
             maze[i,j] = 0
             #print(len(indexy))
     return maze.astype(bool)
+
+def get_template(n, template_number):
+    indexy = []
+
+    #Blank
+    if(template_number == 0):
+        indexy = [(i,j) for i in range(n) for j in range(n)]
+
+    #Slalom diagonal
+    if(template_number == 1):
+        for i in range(n):
+            for j in range(n):
+                if (not(i+j in [n+5, n+6] and i>10)) and (not(i+j in [n-5, n-6] and  i<n-10)):
+                    if(not(i+j in [n+int(n/1.5), n+int(n/1.5)-1] and j>n*3/4)) and (not(i+j in [n-int(n/1.5), n-int(n/1.5)-1] and  j<n-n*3/4)):
+                        indexy.append((i,j))
+    #Big Diag
+    if(template_number == 2):
+        indexy = [(i,j) for i in range(n) for j in range(n) if (not (i+j == n-1)) or i==0 or j==0]
+    
+    #Slalom horizontal
+    if(template_number == 3):
+        tretina = int(n/3)
+        indexy = [(i,j) for i in range(n) for j in range(n) if not ((i == tretina and j<n*4/5) or (i == 2*tretina and j>n/5))]
+
+    return indexy

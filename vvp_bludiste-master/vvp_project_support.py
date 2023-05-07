@@ -5,6 +5,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 import networkx as nx
 import scipy.sparse as sparse
+import random
 
 
 #* Nacteni bludiste 
@@ -98,16 +99,37 @@ def get_idx(idx, connection):
 
 def create_path_matrix(maze, path):
     # Vytvoření matice nul stejného rozměru jako matice s bludištěm
-    path_matrix = np.zeros(maze.shape)
+    path_matrix = np.ones(maze.shape)
 
     # Projděte cestu a přidejte hrany mezi sousedními uzly
     for i in range(len(path)-1):
         current = path[i]
         next_node = path[i+1]
-        path_matrix[current[0], current[1]] = 1
-        path_matrix[next_node[0], next_node[1]] = 1
+        path_matrix[current[0], current[1]] = 0
+        path_matrix[next_node[0], next_node[1]] = 0
 
     # Nastavte hodnotu 1 pro průchozí uzly (bunky na cestě), 0 jinak
     path_matrix[maze] = path_matrix[maze].astype(int)
 
     return path_matrix
+
+def generator_maze(n, shape=None):
+    maze = np.ones((n,n))
+    maze[0,0] = 0
+    maze[n-1,n-1] = 0
+    #indexy = [(i,j) for i in range(n) for j in range(n)]
+    tretina = int(n/3)
+    indexy = [(i,j) for i in range(n) for j in range(n) if not ((i == tretina and j<n*4/5) or (i == 2*tretina and j>n/5))]
+    #*indexy = [(i,j) for i in range(n) for j in range(n) if not ((i == j-5 and j<n*4/5) or (i == j+5 and j>n/5))]
+    
+    while True:
+        try: 
+            inc = incidence_matrix(maze)
+            dijkstra(inc,maze)
+            break
+        except:
+            pos = random.randint(0,len(indexy)-1)
+            i, j = indexy.pop(pos)
+            maze[i,j] = 0
+            #print(len(indexy))
+    return maze.astype(bool)

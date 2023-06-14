@@ -3,7 +3,6 @@ import matplotlib.pylab as plt
 import csv
 import networkx as nx
 import random
-from copy import deepcopy
 
 class Maze:
     def __init__(self, fileName:str = None):
@@ -107,40 +106,42 @@ class Maze:
         self.path_matrix()
     
     def generator_maze(self, n:int, template_number:int = 0) -> None:
-        self.maze = np.zeros((n,n))
+        self.maze = np.zeros((n,n)).astype(bool)
         indexy = self.get_template(n, template_number)
         pocet_bunek = 1000
-        maze_copy = None
-        indexy_copy = None
+        indexy_used = []
         fail_count = 0
-        fail_end = np.ceil(np.sqrt(n))
+        fail_end = n#int(np.ceil(np.sqrt(n)))
 
         while True:
+            
             try:
                 if(pocet_bunek >= len(indexy)):
-                    pocet_bunek /= 10
+                    pocet_bunek = int(pocet_bunek/10)
+                    continue
 
-                maze_copy = deepcopy(self.maze)
-                indexy_copy = deepcopy(indexy)
-
-                for i in range(pocet_bunek):
+                for _ in range(pocet_bunek):
                     pos = random.randint(0,len(indexy)-1)
                     i, j = indexy.pop(pos)
-                    self.maze[i,j] = 1
-
+                    self.maze[i,j] = True
+                    indexy_used.append((i,j))
                 self.solve()
-                break
+                indexy_used.clear()
+                
             except:
+                for idx in indexy_used:
+                    self.maze[idx[0], idx[1]] = False
+                indexy.extend(indexy_used)
+                indexy_used.clear()
+
                 fail_count += 1
                 if(pocet_bunek == 1 and fail_count >= fail_end):
                     break
                 if(fail_count >= fail_end): 
                     fail_count = 0
-                    pocet_bunek /= 10
-                indexy = indexy_copy
-                self.maze = maze_copy
-           
-        self.maze = maze_copy.astype(bool)
+                    pocet_bunek = int(pocet_bunek/10)
+
+        self.maze = self.maze.astype(bool)
     
     def get_template(self, n:int, template_number:int) -> list[tuple[int, int]]:
         indexy = [(i,j) for i in range(n) for j in range(n)]

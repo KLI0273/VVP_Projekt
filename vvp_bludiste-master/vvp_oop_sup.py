@@ -6,10 +6,16 @@ import random
 
 class Maze:
     def __init__(self, fileName:str = None):
-        if(fileName != None):
+        if(fileName is not None):
             self.load(fileName)
             
     def load(self, fileName:str) -> None:
+        '''
+        Vstup:
+            filename - cesta k souboru s bludištěm
+        Výstup:
+            nic (vytvoří self.maze)
+        '''
         data = open(fileName, 'r')
         soubor = csv.reader(data, delimiter=',')
         maze = []
@@ -19,6 +25,12 @@ class Maze:
         self.maze = np.array(maze).astype(bool)
 
     def incidence_matrix(self) -> None:
+        '''
+        Vstup:
+            nic (vyžaduje maze vygenerovaný pomocí "maze.generator_maze" nebo načtený z souboru pomocí "maze.load")
+        Výstup:
+            nic (vytvoří self.inc_matrix)
+        '''
         n = self.maze.shape[0]
         rows = n*n
         cols = 2 * rows - n - n
@@ -28,18 +40,24 @@ class Maze:
             for j in range(n):
                 if (self.maze[i,j] == False): 
                     if( i<n-1):
-                        if(self.maze[i+1,j] == False):
+                        if(not self.maze[i+1,j]):
                             inc_matrix[i * n + j, edge] = 1
                             inc_matrix[(i+1) * n + j, edge] = 1
                             edge += 1
                     if( j<n-1):
-                        if(self.maze[i,j+1] == False):
+                        if(not self.maze[i,j+1]):
                             inc_matrix[i * n + j, edge] = 1
                             inc_matrix[i * n + j+1, edge] = 1
                             edge += 1
         self.inc_matrix = inc_matrix[:,:edge]
 
     def dijkstra(self) -> None:
+        '''
+        Vstup:
+            nic (vyžaduje inc_matrix vygenerovaný pomocí "maze.incidence_matrix")
+        Výstup:
+            nic (vytvoří self.path)
+        ''' 
         n,m = np.shape(self.maze)
 
         result = np.zeros((2,n*n))
@@ -60,7 +78,7 @@ class Maze:
                 if result[1,i] < dst:
                     dst = result[1,i]
                     idx = i
-            g_idx = Maze.get_idx(idx, connection)
+            g_idx = get_idx(idx, connection)
             dst = result[1,idx] + 1
             for it in g_idx:
                 if(dst < result[1,it]):
@@ -76,13 +94,13 @@ class Maze:
             
         self.path = [[int((i-i%n)/n),int(i%n)] for i in path]
 
-    @staticmethod
-    def get_idx(idx:int, connection:list[int]) -> int:
-        gen = [c for c in connection if c[0] == idx  or c[1] == idx]
-        gen = [c[1] if c[0] == idx else c[0] for c in gen]
-        return gen
-    
     def path_matrix(self) -> None:
+        '''
+        Vstup:
+            nic (vyžaduje path vygenerovaný pomocí "maze.dijkstra")
+        Výstup:
+            nic (vytvoří self.result_matrix)
+        ''' 
         path_matrix = np.ones(self.maze.shape)
 
         for i in range(len(self.path)): #for i in range(len(self.path)-1):
@@ -94,18 +112,40 @@ class Maze:
         path_matrix[self.maze] = path_matrix[self.maze].astype(int)
         self.result_matrix = self.maze + path_matrix
 
-    def draw(self) -> None:   
+    def draw(self) -> None:
+        '''
+        Vstup:
+            nic (vyžaduje result_matrix načtenou pomocí "maze.solve" nebo "maze.path_matrix")
+        Výstup:
+            vykreslí bludiště (nevrací nic)
+        '''  
         plt.figure(figsize=(8,4))
         cmap = plt.cm.colors.ListedColormap(['red', 'white', 'black'])
         plt.imshow(self.result_matrix, cmap=cmap)
         plt.show()
     
     def solve(self)->None:
+        '''
+        Vstup:
+            nic (vyžaduje načtené bludiště z souboru pomocí "maze.load" nebo vygenerované pomocí "maze.generator_maze")
+        Výstup:
+            Pro bludiště načtené v self.maze 
+            1) vytvoří matici incidence
+            2) najde nejkratší cestu pomocí djikstrova algoritmu
+            3) vytovří result_matrix kterou lze zobrazit pomocí "maze.draw"
+        '''
         self.incidence_matrix()
         self.dijkstra()
         self.path_matrix()
     
     def generator_maze(self, n:int, template_number:int = 0) -> None:
+        '''
+        Vstup:
+            n - rozměr bludiště
+            template_number - výběr přednastavených šablon
+        Výstup:
+            Přímo nevrací nic (do proměnné "self.maze" uloží bludiště)
+        '''
         self.maze = np.zeros((n,n)).astype(bool)
         indexy = self.get_template(n, template_number)
         pocet_bunek = 1000
@@ -144,6 +184,14 @@ class Maze:
         self.maze = self.maze.astype(bool)
     
     def get_template(self, n:int, template_number:int) -> list[tuple[int, int]]:
+        '''
+        Vstup:
+            n - rozměr bludiště
+            template_number - výběr přednastavených šablon
+        Výstup:
+            List opsahující tuply s dvěmi int hodnoty "list[tuple[int, int]]" obsahující souřadnice i a j v bludiši na které se budou doplňovat stěny
+        '''
+
         indexy = [(i,j) for i in range(n) for j in range(n)]
 
         #*Blank
@@ -184,3 +232,14 @@ class Maze:
 
         return indexy
 
+def get_idx(idx:int, connection:list[int]) -> int:
+        '''
+        Vstup:
+            idx - uzel pro kterého hledáme sousedy
+            connection - list všech sousedů v komponentě obsahující uzel idx
+        Výstup:
+            sousedy uzlu idx
+        '''
+        gen = [c for c in connection if c[0] == idx  or c[1] == idx]
+        gen = [c[1] if c[0] == idx else c[0] for c in gen]
+        return gen
